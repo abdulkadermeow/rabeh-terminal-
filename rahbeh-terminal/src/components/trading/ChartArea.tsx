@@ -1,50 +1,33 @@
-"use client"; // ضرورية جداً لأننا نستخدم الحالة (State) وجلب البيانات بالمتصفح
-
-import { useState, useEffect } from "react";
-import { LineChart, Activity } from "lucide-react";
-
-export function ChartArea() {
-  const [price, setPrice] = useState<string>("جاري الاتصال...");
-  const [status, setStatus] = useState<"loading" | "connected" | "error">("loading");
-
-  useEffect(() => {
-    // جلب السعر الحي لسهم أبل من سيرفر FastAPI الخاص بنا
-    fetch("http://localhost:8000/api/market/price/AAPL")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.price) {
-          setPrice(data.price.toFixed(2));
-          setStatus("connected");
-        } else {
-          setPrice("Error");
-          setStatus("error");
-        }
-      })
-      .catch((err) => {
-        console.error("Backend disconnected", err);
-        setPrice("Disconnected");
-        setStatus("error");
-      });
-  }, []);
+export function ChartArea({ price, symbol }: { price?: number, symbol?: string }) {
+  // استخدام السهم الممرر أو سهم افتراضي في حال التحميل
+  const activeSymbol = symbol || "AAPL";
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded p-3 flex-1 relative flex items-center justify-center min-h-[300px]">
-      <div className="absolute top-3 left-3 flex gap-4 items-center text-sm font-mono">
-        <span className="text-white font-bold text-lg">AAPL</span>
-        <span className={`text-lg ${status === "connected" ? "text-emerald-400" : "text-zinc-500"}`}>
-          {status === "connected" ? `$${price}` : price}
+    <div className="bg-zinc-950 border border-zinc-800 rounded p-3 flex-1 relative flex flex-col min-h-[400px]">
+      
+      {/* شريط السعر العلوي (الخاص بنا) فوق الشارت */}
+      <div className="absolute top-4 left-4 flex gap-4 text-sm font-mono z-10 bg-zinc-950/90 p-2 rounded border border-zinc-800 pointer-events-none shadow-lg">
+        <span className="text-white font-bold text-lg">{symbol || "..."}</span>
+        <span className="text-emerald-400 text-lg">{price ? `$${price.toFixed(2)}` : "..."}</span>
+        <span className="text-emerald-400 text-xs border border-emerald-900/50 bg-emerald-950/20 px-1.5 py-0.5 rounded flex items-center">
+          LIVE
         </span>
-        {status === "connected" && (
-          <span className="flex items-center gap-1 text-[10px] bg-emerald-950/50 text-emerald-500 px-2 py-1 rounded border border-emerald-900/50">
-            <Activity size={12} /> LIVE
-          </span>
-        )}
+      </div>
+
+      {/* شارت TradingView الحقيقي التفاعلي */}
+      <div className="flex-1 w-full h-full rounded overflow-hidden mt-14 border border-zinc-800/50">
+        <iframe
+          src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${activeSymbol}&interval=D&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en`}
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          allowTransparency={true}
+          scrolling="no"
+          allowFullScreen={true}
+          title={`TradingView chart for ${activeSymbol}`}
+        ></iframe>
       </div>
       
-      <div className="text-zinc-700 flex flex-col items-center gap-2">
-        <LineChart size={48} strokeWidth={1} />
-        <span className="text-xs uppercase tracking-widest">TradingView Chart Placeholder</span>
-      </div>
     </div>
   );
 }
